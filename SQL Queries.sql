@@ -147,6 +147,76 @@ GO
 
 
 
+-------------
+
+ALTER PROCEDURE [dbo].[GetRandomVoucherString]
+	@lengthOfString int 
+AS
+BEGIN
+	
+	SET NOCOUNT ON;
+	declare @err int;
+
+    begin transaction t
+	begin try
+		
+		declare @uniqueStringGenerated int = 0;
+		declare @randomString varchar(255) = '';
+		while @uniqueStringGenerated = 0 begin
+			set @randomString = SUBSTRING(CONVERT(varchar(255), NEWID()),0, @lengthOfString + 1);
+			if exists(select v.VoucherNumber from Voucher v where v.VoucherNumber = @randomString)
+			begin
+				set @uniqueStringGenerated = 0;
+			end
+			else
+			begin
+				set @uniqueStringGenerated = 1;
+			end
+		end
+
+		
+		if @err <> 0
+		begin
+			rollback transaction t;
+			print 'Error occured - rollbacked';
+		end
+		else
+		begin
+			commit transaction t;
+			print 'Success - Generated';
+		end
+
+		select @randomString as RandomString;
+
+	end try
+	begin catch	
+		print 'Exception occured -  Details as follows.'
+		declare @errorMessage nvarchar(4000);
+		declare @errorSeverity int;
+		declare @errorState int;
+		declare @errorNumber int;
+		declare @errorProcedure nvarchar(1000);
+		declare @errorLine int;
+
+		set @errorNumber = ERROR_NUMBER();
+		set	@errorSeverity = ERROR_SEVERITY();       
+		set @errorState = ERROR_STATE();
+		set @errorProcedure = ERROR_PROCEDURE();
+		set @errorLine = ERROR_LINE();
+		set @errorMessage = ERROR_MESSAGE();
+
+		print 'Error Number - ' + convert(nvarchar(1000), @errorNumber);	
+		print 'Error Severity - ' + convert(nvarchar(1000), @errorSeverity);	
+		print 'Error State - ' + convert(nvarchar(1000), @errorState);	
+		print 'Error Procedure - ' + @errorProcedure;	
+		print 'Error Line - ' + convert(nvarchar(1000), @errorLine);	
+		print 'Error Message - ' + @errorMessage;
+		print '';
+
+		rollback transaction t;	
+		print 'Transaction - rollbacked';
+	end catch
+END
 
 
 
